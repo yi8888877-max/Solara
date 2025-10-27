@@ -1,243 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Solara</title>
-    <meta name="apple-mobile-web-app-title" content="Solara">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
-    <link rel="shortcut icon" href="/favicon.png">
-    <link rel="mask-icon" href="/favicon.svg" color="#5bbad5">
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png">
-    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/favicon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
-    <script>
-        (function () {
-            const ua = navigator.userAgent || "";
-            const isMobileUA = /android|iphone|ipad|ipod|mobile|blackberry|phone|opera mini|windows phone/i.test(ua);
-            const isSmallScreen = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 820px)").matches;
-            const isMobile = isMobileUA || isSmallScreen;
-            window.__SOLARA_IS_MOBILE = isMobile;
-            if (!isMobile) {
-                document.documentElement.classList.add("desktop-view");
-                const desktopLink = document.createElement("link");
-                desktopLink.rel = "stylesheet";
-                desktopLink.href = "css/desktop.css";
-                desktopLink.id = "desktopStylesheet";
-                document.head.appendChild(desktopLink);
-                return;
-            }
-            document.documentElement.classList.add("mobile-view");
-            const link = document.createElement("link");
-            link.rel = "stylesheet";
-            link.href = "css/mobile.css";
-            link.id = "mobileStylesheet";
-            document.head.appendChild(link);
-            const setViewportUnit = () => {
-                const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-                document.documentElement.style.setProperty("--mobile-vh", `${viewportHeight}px`);
-            };
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solara</title>
 
-            const applyBodyClass = () => {
-                if (document.body) {
-                    document.body.classList.add("mobile-view");
-                    setViewportUnit();
-                }
-            };
-            if (document.readyState === "loading") {
-                document.addEventListener("DOMContentLoaded", applyBodyClass, { once: true });
-            } else {
-                applyBodyClass();
-            }
+<!-- 本地 CSS -->
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/desktop.css" id="desktopStylesheet" media="(min-width: 821px)">
+<link rel="stylesheet" href="css/mobile.css" id="mobileStylesheet" media="(max-width: 820px)">
 
-            window.addEventListener("resize", setViewportUnit);
-            window.addEventListener("orientationchange", setViewportUnit);
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener("resize", setViewportUnit);
-                window.visualViewport.addEventListener("scroll", setViewportUnit);
-            }
+<!-- Font Awesome -->
+<link rel="stylesheet" href="css/font-awesome.min.css">
 
-            setViewportUnit();
-        })();
-    </script>
+<!-- Firebase SDK (CDN 保留) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div class="background-stage" id="backgroundStage" aria-hidden="true">
-        <div class="background-stage__layer background-stage__layer--base" id="backgroundBaseLayer"></div>
-        <div class="background-stage__layer background-stage__layer--transition" id="backgroundTransitionLayer"></div>
+
+<!-- Header -->
+<div class="header">
+    <h1>Solara</h1>
+    <div class="theme-switch-wrapper">
+        <button id="themeToggleButton" class="theme-toggle-button" type="button" aria-label="Toggle theme">
+            <i class="fas fa-sun theme-icon theme-icon--sun"></i>
+            <i class="fas fa-moon theme-icon theme-icon--moon"></i>
+        </button>
     </div>
-    <div class="container" id="mainContainer">
-        <div class="mobile-toolbar" id="mobileToolbar" role="toolbar">
-            <button class="mobile-toolbar__button" id="mobileExploreButton" type="button" aria-label="Explore Radar">
-                <i class="fas fa-satellite-dish" aria-hidden="true"></i>
-            </button>
-            <div class="mobile-toolbar__title" id="mobileToolbarTitle">Solara</div>
-            <div class="mobile-toolbar__actions">
-                <button class="mobile-toolbar__button" id="mobileSearchToggle" type="button" aria-label="Open Search">
-                    <i class="fas fa-search" aria-hidden="true"></i>
-                </button>
+</div>
+
+<!-- Authentication Panel -->
+<div id="authPanel">
+    <h2>Login / Register</h2>
+    <input type="email" id="emailInput" placeholder="Email">
+    <input type="password" id="passwordInput" placeholder="Password">
+    <button id="loginBtn">Login</button>
+    <button id="registerBtn">Register</button>
+    <div id="authMessage"></div>
+</div>
+
+<!-- Messages Panel -->
+<div id="messagesPanel">
+    <h2>Messages</h2>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Write a message..." />
+    <button id="sendBtn">Send</button>
+</div>
+
+<!-- Music Player -->
+<div class="main-content">
+    <div class="cover-area">
+        <div class="mobile-turntable" id="mobileTurntable">
+            <div class="mobile-turntable__platter">
+                <div class="album-cover" id="albumCover">
+                    <div class="placeholder"><i class="fas fa-music"></i></div>
+                </div>
             </div>
         </div>
-        <div class="header">
-            <h1>Solara</h1>
-            <div class="warning">Made by Wet Dream Boy, free API from GD Music Station (music.gdstudio.xyz), for learning purposes only. Support official music!</div>
-            <div class="theme-switch-wrapper">
-                <button id="themeToggleButton" class="theme-toggle-button" type="button" aria-label="Toggle Theme">
-                    <i class="fas fa-sun theme-icon theme-icon--sun" aria-hidden="true"></i>
-                    <i class="fas fa-moon theme-icon theme-icon--moon" aria-hidden="true"></i>
-                </button>
-            </div>
+        <div class="current-song-info">
+            <div class="current-song-title" id="currentSongTitle">Select a song to play</div>
+            <div class="current-song-artist" id="currentSongArtist">Unknown Artist</div>
         </div>
-
-        <!-- Existing music player, search, playlist, lyrics, controls, etc. remain untouched -->
-
-        <!-- Firebase Login / Register / Message Board Integration -->
-        <div id="firebaseSection" style="margin-top:20px; padding:10px; border:1px solid #ccc; border-radius:8px;">
-            <h2>Message Board</h2>
-
-            <div id="loginForm">
-                <input type="email" id="email" placeholder="Email" style="margin-bottom:5px;">
-                <input type="password" id="password" placeholder="Password" style="margin-bottom:5px;">
-                <button id="loginBtn">Login</button>
-                <button id="registerBtn">Register</button>
-            </div>
-
-            <div id="messageForm" style="display:none; margin-top:10px;">
-                <input type="text" id="content" placeholder="Write your message..." style="margin-bottom:5px; width:100%;">
-                <button id="sendBtn">Send</button>
-                <button id="logoutBtn">Logout</button>
-            </div>
-
-            <div id="messages" style="margin-top:10px;"></div>
-        </div>
-
     </div>
 
-    <div class="mobile-overlay-scrim" id="mobileOverlayScrim"></div>
+    <div class="mobile-panel" id="mobilePanel">
+        <div class="playlist active empty" id="playlist">
+            <div class="playlist-header">
+                <div class="playlist-label" aria-hidden="true">Playlist</div>
+                <div class="playlist-actions-tray" role="group" aria-label="Playlist actions">
+                    <input id="importPlaylistInput" type="file" accept="application/json" hidden />
+                    <button id="importPlaylistBtn" type="button" title="Import playlist">
+                        <i class="fas fa-file-import"></i>
+                    </button>
+                    <button id="exportPlaylistBtn" type="button" title="Export playlist">
+                        <i class="fas fa-file-export"></i>
+                    </button>
+                    <button id="clearPlaylistBtn" type="button" onclick="clearPlaylist()" title="Clear playlist">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="playlist-scroll">
+                <div class="playlist-items" id="playlistItems"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <audio id="audioPlayer" preload="metadata" playsinline></audio>
+<!-- Audio Element -->
+<audio id="audioPlayer" preload="metadata" playsinline></audio>
 
-    <!-- Notification and Debug Containers -->
-    <div id="notification" class="notification"></div>
-    <div id="debugInfo" class="debug-info"></div>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- JS Scripts -->
+<script src="js/jquery-3.6.0.min.js"></script>
 <script src="js/index.js"></script>
+<script src="js/mobile.js"></script>
+
+<!-- Firebase & Messages Logic -->
 <script>
-    if (window.__SOLARA_IS_MOBILE) {
-        const mobileScript = document.createElement('script');
-        mobileScript.src = 'js/mobile.js';
-        mobileScript.async = false;
-        mobileScript.defer = false;
-        document.body.appendChild(mobileScript);
-    }
-</script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyAu-M38kbfzqlH6hXg4HD1pC2cIamt8XK0",
+    authDomain: "solara-music.firebaseapp.com",
+    databaseURL: "https://solara-music-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "solara-music",
+    storageBucket: "solara-music.firebasestorage.app",
+    messagingSenderId: "35854719518",
+    appId: "1:35854719518:web:fe3cfc9e4587ce82de2c0f",
+    measurementId: "G-NS6BMC6WRE"
+  };
 
-<!-- Firebase SDK & Integration -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, getDocs } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-// 🔹 Replace with your Firebase project config
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+  const emailInput = document.getElementById('emailInput');
+  const passwordInput = document.getElementById('passwordInput');
+  const loginBtn = document.getElementById('loginBtn');
+  const registerBtn = document.getElementById('registerBtn');
+  const authMessage = document.getElementById('authMessage');
+  const messagesDiv = document.getElementById('messages');
+  const messageInput = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+  // Register
+  registerBtn.addEventListener('click', () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      auth.createUserWithEmailAndPassword(email, password)
+          .then(userCredential => {
+              authMessage.innerText = 'Registered & Logged in as: ' + email;
+              loadMessages();
+          })
+          .catch(error => authMessage.innerText = 'Error: ' + error.message);
+  });
 
-const loginForm = document.getElementById('loginForm');
-const messageForm = document.getElementById('messageForm');
-const messagesDiv = document.getElementById('messages');
+  // Login
+  loginBtn.addEventListener('click', () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      auth.signInWithEmailAndPassword(email, password)
+          .then(userCredential => {
+              authMessage.innerText = 'Logged in as: ' + email;
+              loadMessages();
+          })
+          .catch(error => authMessage.innerText = 'Error: ' + error.message);
+  });
 
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const contentInput = document.getElementById('content');
+  // Send message
+  sendBtn.addEventListener('click', () => {
+      const content = messageInput.value.trim();
+      if (!auth.currentUser) { alert('You must login first!'); return; }
+      if (!content) return;
+      db.collection('messages').add({
+          username: auth.currentUser.email,
+          content: content,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => { messageInput.value=''; loadMessages(); })
+      .catch(err => alert(err.message));
+  });
 
-const loginBtn = document.getElementById('loginBtn');
-const registerBtn = document.getElementById('registerBtn');
-const sendBtn = document.getElementById('sendBtn');
-const logoutBtn = document.getElementById('logoutBtn');
+  // Load messages
+  function loadMessages() {
+      db.collection('messages').orderBy('createdAt','asc').get().then(snapshot=>{
+          messagesDiv.innerHTML='';
+          snapshot.forEach(doc=>{
+              const data=doc.data();
+              const div=document.createElement('div');
+              div.innerHTML=`<strong>${data.username}</strong>: ${data.content}`;
+              messagesDiv.appendChild(div);
+          });
+      });
+  }
 
-// Login
-loginBtn.addEventListener('click', async () => {
-    try {
-        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-        emailInput.value = '';
-        passwordInput.value = '';
-    } catch (e) {
-        alert("Login failed: " + e.message);
-    }
-});
-
-// Register
-registerBtn.addEventListener('click', async () => {
-    try {
-        await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-        emailInput.value = '';
-        passwordInput.value = '';
-    } catch (e) {
-        alert("Registration failed: " + e.message);
-    }
-});
-
-// Logout
-logoutBtn.addEventListener('click', async () => {
-    await signOut(auth);
-});
-
-// Send message
-sendBtn.addEventListener('click', async () => {
-    const user = auth.currentUser;
-    const content = contentInput.value.trim();
-    if (!content) return alert("Message cannot be empty!");
-    if (!user) return alert("You must be logged in!");
-    await addDoc(collection(db, "messages"), {
-        username: user.email,
-        content: content
-    });
-    contentInput.value = '';
-    loadMessages();
-});
-
-// Auth state listener
-onAuthStateChanged(auth, user => {
-    if (user) {
-        loginForm.style.display = 'none';
-        messageForm.style.display = 'block';
-    } else {
-        loginForm.style.display = 'block';
-        messageForm.style.display = 'none';
-    }
-});
-
-// Load messages
-async function loadMessages() {
-    const q = query(collection(db, "messages"));
-    const querySnapshot = await getDocs(q);
-    messagesDiv.innerHTML = '';
-    querySnapshot.forEach(doc => {
-        const data = doc.data();
-        const div = document.createElement('div');
-        div.className = 'message';
-        div.innerHTML = `<strong>${data.username}</strong>: ${data.content}`;
-        messagesDiv.appendChild(div);
-    });
-}
-
-loadMessages();
+  // Auth state observer
+  auth.onAuthStateChanged(user=>{
+      if(user){
+          authMessage.innerText='Logged in as: '+user.email;
+          loadMessages();
+      } else {
+          authMessage.innerText='Not logged in';
+      }
+  });
 </script>
 
 </body>
