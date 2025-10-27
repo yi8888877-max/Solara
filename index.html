@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Solara</title>
 
-<!-- CSS -->
+<!-- 原版 CSS -->
 <link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/desktop.css" media="(min-width: 821px)">
-<link rel="stylesheet" href="css/mobile.css" media="(max-width: 820px)">
-<link rel="stylesheet" href="css/font-awesome.min.css">
+<link rel="stylesheet" href="css/desktop.css">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -18,20 +19,37 @@
 </head>
 <body>
 
-<!-- Login / Register Panel -->
-<div id="authPanel">
+<!-- 登录面板 -->
+<div id="authPanel" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:20px;border:1px solid #ccc;background:#fff;z-index:1000;">
     <h2>Login / Register</h2>
-    <input type="email" id="emailInput" placeholder="Email">
-    <input type="password" id="passwordInput" placeholder="Password">
+    <input type="email" id="emailInput" placeholder="Email"><br><br>
+    <input type="password" id="passwordInput" placeholder="Password"><br><br>
     <button id="loginBtn">Login</button>
     <button id="registerBtn">Register</button>
-    <div id="authMessage"></div>
+    <div id="authMessage" style="margin-top:10px;color:red;"></div>
 </div>
 
-<!-- Main Music & Messages -->
-<div class="main-content" style="display:none;">
-    <!-- 原始音乐播放器 HTML 保留 -->
-    <div id="musicPlayerContainer">
+<!-- 原版音乐播放器 HTML -->
+<div class="container" id="mainContainer">
+    <!-- Header, 背景等保持原版 -->
+    <div class="background-stage" id="backgroundStage" aria-hidden="true">
+        <div class="background-stage__layer background-stage__layer--base" id="backgroundBaseLayer"></div>
+        <div class="background-stage__layer background-stage__layer--transition" id="backgroundTransitionLayer"></div>
+    </div>
+
+    <div class="header">
+        <h1>Solara</h1>
+        <div class="theme-switch-wrapper">
+            <button id="themeToggleButton" class="theme-toggle-button" type="button" aria-label="切换深浅色模式">
+                <i class="fas fa-sun theme-icon theme-icon--sun" aria-hidden="true"></i>
+                <i class="fas fa-moon theme-icon theme-icon--moon" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+        <!-- 保留原版音乐播放器 -->
         <div class="cover-area">
             <div class="mobile-turntable" id="mobileTurntable">
                 <div class="mobile-turntable__platter">
@@ -41,20 +59,21 @@
                 </div>
             </div>
             <div class="current-song-info">
-                <div class="current-song-title" id="currentSongTitle">Select a song to play</div>
-                <div class="current-song-artist" id="currentSongArtist">Unknown Artist</div>
+                <div class="current-song-title" id="currentSongTitle">选择一首歌曲开始播放</div>
+                <div class="current-song-artist" id="currentSongArtist">未知艺术家</div>
             </div>
         </div>
 
+        <!-- 播放列表面板 -->
         <div class="mobile-panel" id="mobilePanel">
             <div class="playlist active empty" id="playlist">
                 <div class="playlist-header">
-                    <div class="playlist-label">Playlist</div>
+                    <div class="playlist-label" aria-hidden="true">播放列表</div>
                     <div class="playlist-actions-tray">
                         <input id="importPlaylistInput" type="file" accept="application/json" hidden />
-                        <button id="importPlaylistBtn" title="Import playlist"><i class="fas fa-file-import"></i></button>
-                        <button id="exportPlaylistBtn" title="Export playlist"><i class="fas fa-file-export"></i></button>
-                        <button id="clearPlaylistBtn" onclick="clearPlaylist()" title="Clear playlist"><i class="fas fa-trash"></i></button>
+                        <button id="importPlaylistBtn" type="button" title="导入播放列表"><i class="fas fa-file-import"></i></button>
+                        <button id="exportPlaylistBtn" type="button" title="导出播放列表"><i class="fas fa-file-export"></i></button>
+                        <button id="clearPlaylistBtn" type="button" onclick="clearPlaylist()" title="清空播放列表"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
                 <div class="playlist-scroll">
@@ -62,28 +81,26 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Messages Panel -->
-    <div id="messagesPanel">
-        <h2>Messages</h2>
-        <div id="messages"></div>
-        <input type="text" id="messageInput" placeholder="Write a message..." />
-        <button id="sendBtn">Send</button>
+        <!-- 留言板 -->
+        <div id="messagesPanel" style="margin-top:20px;">
+            <h2>Messages</h2>
+            <div id="messages" style="height:200px;overflow-y:auto;border:1px solid #ccc;padding:5px;"></div>
+            <input type="text" id="messageInput" placeholder="Write a message..." style="width:70%;">
+            <button id="sendBtn">Send</button>
+        </div>
     </div>
 </div>
 
-<!-- Audio Player -->
+<!-- Audio -->
 <audio id="audioPlayer" preload="metadata" playsinline></audio>
 
 <!-- JS -->
 <script src="js/jquery-3.6.0.min.js"></script>
 <script src="js/index.js"></script>
-<script src="js/mobile.js"></script>
 
 <script>
-  // Firebase config
-  const firebaseConfig = {
+const firebaseConfig = {
     apiKey: "AIzaSyAu-M38kbfzqlH6hXg4HD1pC2cIamt8XK0",
     authDomain: "solara-music.firebaseapp.com",
     databaseURL: "https://solara-music-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -92,84 +109,79 @@
     messagingSenderId: "35854719518",
     appId: "1:35854719518:web:fe3cfc9e4587ce82de2c0f",
     measurementId: "G-NS6BMC6WRE"
-  };
+};
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-  const authPanel = document.getElementById('authPanel');
-  const mainContent = document.querySelector('.main-content');
-  const messagesPanel = document.getElementById('messagesPanel');
-  const emailInput = document.getElementById('emailInput');
-  const passwordInput = document.getElementById('passwordInput');
-  const loginBtn = document.getElementById('loginBtn');
-  const registerBtn = document.getElementById('registerBtn');
-  const authMessage = document.getElementById('authMessage');
-  const messagesDiv = document.getElementById('messages');
-  const messageInput = document.getElementById('messageInput');
-  const sendBtn = document.getElementById('sendBtn');
+const authPanel = document.getElementById('authPanel');
+const mainContainer = document.getElementById('mainContainer');
+const emailInput = document.getElementById('emailInput');
+const passwordInput = document.getElementById('passwordInput');
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const authMessage = document.getElementById('authMessage');
+const messagesDiv = document.getElementById('messages');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
 
-  // Register
-  registerBtn.addEventListener('click', () => {
-      const email = emailInput.value;
-      const password = passwordInput.value;
-      auth.createUserWithEmailAndPassword(email, password)
-          .then(() => { authMessage.innerText = 'Registered & Logged in as: ' + email; })
-          .catch(error => authMessage.innerText = 'Error: ' + error.message);
-  });
+// 注册
+registerBtn.addEventListener('click', ()=>{
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    auth.createUserWithEmailAndPassword(email,password)
+    .then(()=>{ authMessage.innerText='Registered & Logged in: '+email; })
+    .catch(e=>authMessage.innerText=e.message);
+});
 
-  // Login
-  loginBtn.addEventListener('click', () => {
-      const email = emailInput.value;
-      const password = passwordInput.value;
-      auth.signInWithEmailAndPassword(email, password)
-          .then(() => { authMessage.innerText = 'Logged in as: ' + email; })
-          .catch(error => authMessage.innerText = 'Error: ' + error.message);
-  });
+// 登录
+loginBtn.addEventListener('click', ()=>{
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    auth.signInWithEmailAndPassword(email,password)
+    .then(()=>{ authMessage.innerText='Logged in: '+email; })
+    .catch(e=>authMessage.innerText=e.message);
+});
 
-  // Send message
-  sendBtn.addEventListener('click', () => {
-      const content = messageInput.value.trim();
-      if (!auth.currentUser) { alert('You must login first!'); return; }
-      if (!content) return;
-      db.collection('messages').add({
-          username: auth.currentUser.email,
-          content: content,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => { messageInput.value=''; loadMessages(); })
-      .catch(err => alert(err.message));
-  });
+// 发送留言
+sendBtn.addEventListener('click', ()=>{
+    const content = messageInput.value.trim();
+    if(!auth.currentUser){ alert('Please login first'); return; }
+    if(!content) return;
+    db.collection('messages').add({
+        username: auth.currentUser.email,
+        content: content,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(()=>{ messageInput.value=''; loadMessages(); })
+    .catch(e=>alert(e.message));
+});
 
-  // Load messages
-  function loadMessages() {
-      db.collection('messages').orderBy('createdAt','asc').get().then(snapshot=>{
-          messagesDiv.innerHTML='';
-          snapshot.forEach(doc=>{
-              const data=doc.data();
-              const div=document.createElement('div');
-              div.innerHTML=`<strong>${data.username}</strong>: ${data.content}`;
-              messagesDiv.appendChild(div);
-          });
-      });
-  }
+// 加载留言
+function loadMessages(){
+    db.collection('messages').orderBy('createdAt','asc').get().then(snapshot=>{
+        messagesDiv.innerHTML='';
+        snapshot.forEach(doc=>{
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.innerHTML=`<strong>${data.username}</strong>: ${data.content}`;
+            messagesDiv.appendChild(div);
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+}
 
-  // Auth state observer (自动登录 & 界面切换)
-  auth.onAuthStateChanged(user=>{
-      if(user){
-          authPanel.style.display='none';
-          mainContent.style.display='block';
-          messagesPanel.style.display='block';
-          authMessage.innerText='Logged in as: '+user.email;
-          loadMessages();
-      } else {
-          authPanel.style.display='block';
-          mainContent.style.display='none';
-          messagesPanel.style.display='none';
-          authMessage.innerText='Not logged in';
-      }
-  });
+// 登录状态监听（自动登录 + 界面切换）
+auth.onAuthStateChanged(user=>{
+    if(user){
+        authPanel.style.display='none';
+        mainContainer.style.display='block';
+        loadMessages();
+    } else {
+        authPanel.style.display='block';
+        mainContainer.style.display='none';
+    }
+});
 </script>
-
 </body>
 </html>
