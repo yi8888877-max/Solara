@@ -5,22 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Solara</title>
 
-<!-- 本地 CSS -->
+
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/desktop.css" id="desktopStylesheet" media="(min-width: 821px)">
 <link rel="stylesheet" href="css/mobile.css" id="mobileStylesheet" media="(max-width: 820px)">
-
-<!-- Font Awesome -->
 <link rel="stylesheet" href="css/font-awesome.min.css">
 
-<!-- Firebase SDK (CDN 保留) -->
+
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-<!-- Header -->
+
 <div class="header">
     <h1>Solara</h1>
     <div class="theme-switch-wrapper">
@@ -31,7 +29,7 @@
     </div>
 </div>
 
-<!-- Authentication Panel -->
+
 <div id="authPanel">
     <h2>Login / Register</h2>
     <input type="email" id="emailInput" placeholder="Email">
@@ -41,65 +39,62 @@
     <div id="authMessage"></div>
 </div>
 
-<!-- Messages Panel -->
-<div id="messagesPanel">
-    <h2>Messages</h2>
-    <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Write a message..." />
-    <button id="sendBtn">Send</button>
-</div>
 
-<!-- Music Player -->
-<div class="main-content">
-    <div class="cover-area">
-        <div class="mobile-turntable" id="mobileTurntable">
-            <div class="mobile-turntable__platter">
-                <div class="album-cover" id="albumCover">
-                    <div class="placeholder"><i class="fas fa-music"></i></div>
+<div class="main-content" style="display:none;">
+ 
+    <div id="musicPlayerContainer">
+        
+        <div class="cover-area">
+            <div class="mobile-turntable" id="mobileTurntable">
+                <div class="mobile-turntable__platter">
+                    <div class="album-cover" id="albumCover">
+                        <div class="placeholder"><i class="fas fa-music"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="current-song-info">
+                <div class="current-song-title" id="currentSongTitle">Select a song to play</div>
+                <div class="current-song-artist" id="currentSongArtist">Unknown Artist</div>
+            </div>
+        </div>
+
+        <div class="mobile-panel" id="mobilePanel">
+            <div class="playlist active empty" id="playlist">
+                <div class="playlist-header">
+                    <div class="playlist-label" aria-hidden="true">Playlist</div>
+                    <div class="playlist-actions-tray" role="group" aria-label="Playlist actions">
+                        <input id="importPlaylistInput" type="file" accept="application/json" hidden />
+                        <button id="importPlaylistBtn" type="button" title="Import playlist"><i class="fas fa-file-import"></i></button>
+                        <button id="exportPlaylistBtn" type="button" title="Export playlist"><i class="fas fa-file-export"></i></button>
+                        <button id="clearPlaylistBtn" type="button" onclick="clearPlaylist()" title="Clear playlist"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="playlist-scroll">
+                    <div class="playlist-items" id="playlistItems"></div>
                 </div>
             </div>
         </div>
-        <div class="current-song-info">
-            <div class="current-song-title" id="currentSongTitle">Select a song to play</div>
-            <div class="current-song-artist" id="currentSongArtist">Unknown Artist</div>
-        </div>
     </div>
 
-    <div class="mobile-panel" id="mobilePanel">
-        <div class="playlist active empty" id="playlist">
-            <div class="playlist-header">
-                <div class="playlist-label" aria-hidden="true">Playlist</div>
-                <div class="playlist-actions-tray" role="group" aria-label="Playlist actions">
-                    <input id="importPlaylistInput" type="file" accept="application/json" hidden />
-                    <button id="importPlaylistBtn" type="button" title="Import playlist">
-                        <i class="fas fa-file-import"></i>
-                    </button>
-                    <button id="exportPlaylistBtn" type="button" title="Export playlist">
-                        <i class="fas fa-file-export"></i>
-                    </button>
-                    <button id="clearPlaylistBtn" type="button" onclick="clearPlaylist()" title="Clear playlist">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="playlist-scroll">
-                <div class="playlist-items" id="playlistItems"></div>
-            </div>
-        </div>
+    
+    <div id="messagesPanel">
+        <h2>Messages</h2>
+        <div id="messages"></div>
+        <input type="text" id="messageInput" placeholder="Write a message..." />
+        <button id="sendBtn">Send</button>
     </div>
 </div>
 
-<!-- Audio Element -->
+
 <audio id="audioPlayer" preload="metadata" playsinline></audio>
 
-<!-- JS Scripts -->
+
 <script src="js/jquery-3.6.0.min.js"></script>
 <script src="js/index.js"></script>
 <script src="js/mobile.js"></script>
 
-<!-- Firebase & Messages Logic -->
 <script>
-  // Firebase config
+
   const firebaseConfig = {
     apiKey: "AIzaSyAu-M38kbfzqlH6hXg4HD1pC2cIamt8XK0",
     authDomain: "solara-music.firebaseapp.com",
@@ -115,6 +110,9 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
+  const authPanel = document.getElementById('authPanel');
+  const mainContent = document.querySelector('.main-content');
+  const messagesPanel = document.getElementById('messagesPanel');
   const emailInput = document.getElementById('emailInput');
   const passwordInput = document.getElementById('passwordInput');
   const loginBtn = document.getElementById('loginBtn');
@@ -124,31 +122,25 @@
   const messageInput = document.getElementById('messageInput');
   const sendBtn = document.getElementById('sendBtn');
 
-  // Register
+  
   registerBtn.addEventListener('click', () => {
       const email = emailInput.value;
       const password = passwordInput.value;
       auth.createUserWithEmailAndPassword(email, password)
-          .then(userCredential => {
-              authMessage.innerText = 'Registered & Logged in as: ' + email;
-              loadMessages();
-          })
+          .then(userCredential => { authMessage.innerText = 'Registered & Logged in as: ' + email; })
           .catch(error => authMessage.innerText = 'Error: ' + error.message);
   });
 
-  // Login
+  
   loginBtn.addEventListener('click', () => {
       const email = emailInput.value;
       const password = passwordInput.value;
       auth.signInWithEmailAndPassword(email, password)
-          .then(userCredential => {
-              authMessage.innerText = 'Logged in as: ' + email;
-              loadMessages();
-          })
+          .then(userCredential => { authMessage.innerText = 'Logged in as: ' + email; })
           .catch(error => authMessage.innerText = 'Error: ' + error.message);
   });
 
-  // Send message
+
   sendBtn.addEventListener('click', () => {
       const content = messageInput.value.trim();
       if (!auth.currentUser) { alert('You must login first!'); return; }
@@ -174,12 +166,17 @@
       });
   }
 
-  // Auth state observer
   auth.onAuthStateChanged(user=>{
       if(user){
+          authPanel.style.display='none';
+          mainContent.style.display='block';
+          messagesPanel.style.display='block';
           authMessage.innerText='Logged in as: '+user.email;
           loadMessages();
       } else {
+          authPanel.style.display='block';
+          mainContent.style.display='none';
+          messagesPanel.style.display='none';
           authMessage.innerText='Not logged in';
       }
   });
