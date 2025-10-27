@@ -1,162 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Music</title>
-<meta name="apple-mobile-web-app-title" content="Music">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
-<link rel="shortcut icon" href="/favicon.png">
-<link rel="mask-icon" href="/favicon.svg" color="#5bbad5">
-<link rel="apple-touch-icon" sizes="180x180" href="/favicon.png">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="/favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <title>Solara 留言板</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #loginForm, #messageForm { margin-bottom: 20px; }
+    #messages { border-top: 1px solid #ccc; padding-top: 10px; }
+    .message { margin-bottom: 10px; padding: 5px; border-bottom: 1px solid #eee; }
+    .username { font-weight: bold; }
+    .content { margin-left: 10px; }
+  </style>
+</head>
+<body>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<h2>留言板</h2>
 
-<script>
+<div id="loginForm">
+  <input type="email" id="email" placeholder="邮箱">
+  <input type="password" id="password" placeholder="密码">
+  <button id="loginBtn">登录</button>
+  <button id="registerBtn">注册</button>
+</div>
+
+<div id="messageForm" style="display:none;">
+  <input type="text" id="content" placeholder="写下你的留言">
+  <button id="sendBtn">发送</button>
+  <button id="logoutBtn">退出登录</button>
+</div>
+
+<div id="messages"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, getDocs } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+
+// 🔹 修改这里为你的 Firebase 配置
 const firebaseConfig = {
-  apiKey: "AIzaSyAu-M38kbfzqlH6hXg4HD1pC2cIamt8XK0",
-  authDomain: "solara-music.firebaseapp.com",
-  databaseURL: "https://solara-music-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "solara-music",
-  storageBucket: "solara-music.firebasestorage.app",
-  messagingSenderId: "35854719518",
-  appId: "1:35854719518:web:fe3cfc9e4587ce82de2c0f",
-  measurementId: "G-NS6BMC6WRE"
+  apiKey: "你的APIKEY",
+  authDomain: "你的PROJECTID.firebaseapp.com",
+  projectId: "你的PROJECTID",
+  storageBucket: "你的PROJECTID.appspot.com",
+  messagingSenderId: "你的SENDERID",
+  appId: "你的APPID"
 };
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-function register(email, password) { return auth.createUserWithEmailAndPassword(email, password); }
-function login(email, password) { return auth.signInWithEmailAndPassword(email, password); }
-function logout() { return auth.signOut(); }
+const loginForm = document.getElementById('loginForm');
+const messageForm = document.getElementById('messageForm');
+const messagesDiv = document.getElementById('messages');
 
-auth.onAuthStateChanged(user => {
-  if(user) {
-    document.querySelectorAll('.userEmail').forEach(el=>el.textContent=user.email);
-    document.querySelectorAll('.loginSection').forEach(el=>el.style.display='none');
-    document.querySelectorAll('.playerSection').forEach(el=>el.style.display='block');
-    loadPlayHistory();
-  } else {
-    document.querySelectorAll('.loginSection').forEach(el=>el.style.display='block');
-    document.querySelectorAll('.playerSection').forEach(el=>el.style.display='none');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const contentInput = document.getElementById('content');
+
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const sendBtn = document.getElementById('sendBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// 登录
+loginBtn.addEventListener('click', async () => {
+  try {
+    await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+    emailInput.value = '';
+    passwordInput.value = '';
+  } catch (e) {
+    alert("登录失败: " + e.message);
   }
 });
 
-function savePlayRecord(songName, artist) {
+// 注册
+registerBtn.addEventListener('click', async () => {
+  try {
+    await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+    emailInput.value = '';
+    passwordInput.value = '';
+  } catch (e) {
+    alert("注册失败: " + e.message);
+  }
+});
+
+// 退出登录
+logoutBtn.addEventListener('click', async () => {
+  await signOut(auth);
+});
+
+// 发送留言
+sendBtn.addEventListener('click', async () => {
   const user = auth.currentUser;
-  if(!user) return;
-  db.collection('users').doc(user.uid).collection('history').add({
-    songName, artist,
-    playedAt: firebase.firestore.FieldValue.serverTimestamp()
+  const content = contentInput.value.trim();
+  if (!content) return alert("留言不能为空！");
+  if (!user) return alert("未登录！");
+  await addDoc(collection(db, "messages"), {
+    username: user.email,
+    content: content
+  });
+  contentInput.value = '';
+  loadMessages();
+});
+
+// 监听登录状态
+onAuthStateChanged(auth, user => {
+  if (user) {
+    loginForm.style.display = 'none';
+    messageForm.style.display = 'block';
+  } else {
+    loginForm.style.display = 'block';
+    messageForm.style.display = 'none';
+  }
+});
+
+// 加载留言
+async function loadMessages() {
+  const q = query(collection(db, "messages"));
+  const querySnapshot = await getDocs(q);
+  messagesDiv.innerHTML = '';
+  querySnapshot.forEach(doc => {
+    const data = doc.data();
+    const div = document.createElement('div');
+    div.className = 'message';
+    div.innerHTML = `<span class="username">${data.username}</span>: <span class="content">${data.content}</span>`;
+    messagesDiv.appendChild(div);
   });
 }
 
-function loadPlayHistory() {
-  const user = auth.currentUser;
-  if(!user) return;
-  const historyContainers = document.querySelectorAll('.historyList');
-  historyContainers.forEach(container=>container.innerHTML='');
-  db.collection('users').doc(user.uid).collection('history').orderBy('playedAt','desc').get().then(snapshot=>{
-    snapshot.docs.forEach(doc=>{
-      const data = doc.data();
-      const div = document.createElement('div');
-      div.className='history-item';
-      div.textContent=`${data.songName} - ${data.artist}`;
-      historyContainers.forEach(container=>container.appendChild(div));
-    });
-  });
-}
+loadMessages();
 </script>
 
-<script>
-(function () {
-    const ua = navigator.userAgent || "";
-    const isMobileUA = /android|iphone|ipad|ipod|mobile|blackberry|phone|opera mini|windows phone/i.test(ua);
-    const isSmallScreen = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 820px)").matches;
-    const isMobile = isMobileUA || isSmallScreen;
-    window.__SOLARA_IS_MOBILE = isMobile;
-    if (!isMobile) {
-        document.documentElement.classList.add("desktop-view");
-        const desktopLink = document.createElement("link");
-        desktopLink.rel = "stylesheet";
-        desktopLink.href = "css/desktop.css";
-        desktopLink.id = "desktopStylesheet";
-        document.head.appendChild(desktopLink);
-        return;
-    }
-    document.documentElement.classList.add("mobile-view");
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "css/mobile.css";
-    link.id = "mobileStylesheet";
-    document.head.appendChild(link);
-    const setViewportUnit = () => {
-        const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        document.documentElement.style.setProperty("--mobile-vh", `${viewportHeight}px`);
-    };
-    const applyBodyClass = () => { if(document.body){document.body.classList.add("mobile-view"); setViewportUnit();} };
-    if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",applyBodyClass,{once:true});}
-    else{applyBodyClass();}
-    window.addEventListener("resize",setViewportUnit);
-    window.addEventListener("orientationchange",setViewportUnit);
-    if(window.visualViewport){window.visualViewport.addEventListener("resize",setViewportUnit); window.visualViewport.addEventListener("scroll",setViewportUnit);}
-    setViewportUnit();
-})();
-</script>
-</head>
-<body>
-<div class="background-stage" id="backgroundStage">
-  <div class="background-stage__layer background-stage__layer--base" id="backgroundBaseLayer"></div>
-  <div class="background-stage__layer background-stage__layer--transition" id="backgroundTransitionLayer"></div>
-</div>
-
-<div class="container" id="mainContainer">
-
-<!-- Login Section (common for desktop and mobile) -->
-<div class="loginSection">
-  <h2>Login / Register</h2>
-  <input type="email" id="emailInput" placeholder="Email">
-  <input type="password" id="passwordInput" placeholder="Password">
-  <button onclick="login(emailInput.value,passwordInput.value).catch(e=>alert(e.message))">Login</button>
-  <button onclick="register(emailInput.value,passwordInput.value).catch(e=>alert(e.message))">Register</button>
-</div>
-
-<!-- Player Section (common for desktop and mobile) -->
-<div class="playerSection" style="display:none;">
-  <button onclick="logout()">Logout</button>
-  <h2>Now Playing</h2>
-  <div id="currentSongTitle">Select a song</div>
-  <div id="currentSongArtist">Unknown Artist</div>
-  <button onclick="savePlayRecord(currentSongTitle.textContent,currentSongArtist.textContent)">Save Play</button>
-  
-  <h2>My Play History</h2>
-  <div class="historyList"></div>
-</div>
-
-</div>
-
-<audio id="audioPlayer" preload="metadata" playsinline></audio>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="js/index.js"></script>
-<script>
-if(window.__SOLARA_IS_MOBILE){
-  const mobileScript=document.createElement('script');
-  mobileScript.src='js/mobile.js';
-  mobileScript.async=false;
-  mobileScript.defer=false;
-  document.body.appendChild(mobileScript);
-}
-</script>
 </body>
 </html>
